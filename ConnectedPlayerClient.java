@@ -63,7 +63,7 @@ public class ConnectedPlayerClient implements Runnable {
             Logger.getLogger(ConnectedPlayerClient.class.getName()).log(Level.SEVERE, null, problem);
         }
     }
-    
+  
     @Override
     public void run(){
         while(true){
@@ -71,7 +71,7 @@ public class ConnectedPlayerClient implements Runnable {
                 if(this.userName.equals("")){
                     this.userName = this.br.readLine();
                     if(this.userName != null){
-                        this.userName = this.userName.trim();
+                        this.userName = this.userName.trim().replace("\r", "");
                         System.out.println("Konektovan igrač: " + this.userName);
                         ConnectFourServer.sendListOfAvailablePlayers(allClients);
                     } else {
@@ -86,10 +86,12 @@ public class ConnectedPlayerClient implements Runnable {
                         System.out.println("Stigao je zahtev od " + this.userName + ": " + line);
                         if (line.startsWith("INVITATION")) {
                             String[] tokeni = line.split(";");
-                            String selectedPlayer = tokeni[1].trim();
+                            String selectedPlayer = tokeni[1].trim().replace("\r", "");
+                            System.out.println("[SERVER] Telefon trazi igraca: '" + selectedPlayer + "'");
                             
                             ConnectedPlayerClient peerFound = null;
                             for(ConnectedPlayerClient cl : allClients) {
+                                System.out.println("[SERVER] Provera klijenta u listi: '" + cl.getUserName() + "' | Dostupan: " + cl.isAvailable());
                                 if(cl.getUserName().equalsIgnoreCase(selectedPlayer) && cl.isAvailable()) {
                                     peerFound = cl;
                                     break;
@@ -97,6 +99,7 @@ public class ConnectedPlayerClient implements Runnable {
                             }
                             
                             if(peerFound != null) {
+                                System.out.println("[SERVER] Igrac pronadjen! Spajam ih...");
                                 this.available = false;
                                 peerFound.setAvailable(false);
                                 
@@ -107,6 +110,7 @@ public class ConnectedPlayerClient implements Runnable {
                                 
                                 ConnectFourServer.sendListOfAvailablePlayers(allClients);
                             } else {
+                                System.out.println("[SERVER] GRESKA: Igrac '" + selectedPlayer + "' nije pronadjen ili nije dostupan!");
                                 this.sendMessage("ERROR;Igrač je nedostupan.");
                             }
                         }
