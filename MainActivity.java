@@ -22,16 +22,24 @@ public class MainActivity extends AppCompatActivity {
     private boolean firstWasPlayerOne = true;
     private TextView statusTextView;
     private GridLayout boardGridLayout;
+      private NetworkConnection networkConnection;
+    private String myRole= "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        
+        networkConnection = NetworkConnection.getInstance();
+        networkConnection.setCallback(this);
+        
         statusTextView = findViewById(R.id.statusTextView);
         boardGridLayout = findViewById(R.id.boardGridLayout);
 
         boardInitialization();
+
+         networkConnection.connect("10.0.2.2", 4925, "Mobilni_Telefon");
+        statusTextView.setText("Povezivanje na server...");
     }
 
     private void boardInitialization(){
@@ -52,7 +60,14 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onClick(View v){
                         if (!activeGame) return;
+
+                         if ((myRole.equals("RED_PLAYER") && !firstPlayersTurn) || (myRole.equals("BLUE_PLAYER") && firstPlayersTurn)){
+                            Toast.makeText(MainActivity.this, "Sacekaj protibvnikov potez!", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        
                         int columnClicked = (int) v.getTag();
+                        networkConnection.sendMessage("TURN;" + columnClicked);
                         playTheMove(columnClicked);
                     }
                 });
@@ -60,8 +75,6 @@ public class MainActivity extends AppCompatActivity {
                 boardGridLayout.addView(field);
             }
         }
-        activeGame= true;
-        updateStatusText();
     }
 
     private void playTheMove(int column){
@@ -80,7 +93,6 @@ public class MainActivity extends AppCompatActivity {
                     activeGame = false;
                     String winner = firstPlayersTurn ? "Red Player" : "Blue Player";
                     statusTextView.setText(winner + " won!");
-                    newGameSwitchPlayer();
                     return;
                 }
                 firstPlayersTurn = !firstPlayersTurn;
@@ -97,6 +109,49 @@ public class MainActivity extends AppCompatActivity {
         }else{
             statusTextView.setText("Blue Player's turn");
         }
+    }
+
+    
+    @Override
+    public void onPlayersListReceived(String[] players){
+        for(final String p : players){
+            final String trimmedPlayer = p.trim();
+            if (!trimmedPlayer.isEmpty() && !trimmedPlayer.equals("Mobilni_Telefon")){
+                Toast.makeText(MainActivity.this, "Automatski izazivam: " + trimmedPlayer, Toast.LENGTH_SHORT).show();
+                networkConnection.sendMessage("INVITATION;" + p);
+                break;
+            }
+        }
+    }
+
+    @Override
+    public void onGameStarted(String playerRole, String rivalName){
+        this.myRole = playerRole;
+        this.activeGame = true;
+        this.firstPlayersTurn = true;
+        boardInitialization();
+        Toast.makeText(this, "Partija je pocela! Protivnik: " + rivalName, Toast.LENGTH_LONG).show();
+        updateStatusText();
+    }
+
+    @Override
+    public void onMoveReceived(int column){
+        playTheMove(column);
+    }
+
+    @Override
+    public void onRivalLeft(){
+        activeGame = false;
+        statusTextView.setText("Protivnik je napustio igru.");
+        Toast.makeText(this, "Protivnik se diskonektovao.", Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onRestartReceived(){
+        boardInitialization();
+        activeGame = true;
+        firstPlayersTurn = true;
+        updateStatusText();
     }
 
     private int dpToPx(int dp){
@@ -148,16 +203,10 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-    private void newGameSwitchPlayer(){
-        boardGridLayout.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                firstWasPlayerOne = !firstWasPlayerOne;
-                firstPlayersTurn = firstWasPlayerOne;
-                boardInitialization();
-
-            }
-        }, 5000);
+     @Override
+    protected void onDestroy(){
+        super.onDestroy();
+        networkConnection.disconnect();
     }
 }
 
