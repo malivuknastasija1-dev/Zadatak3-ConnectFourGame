@@ -16,3 +16,12 @@
 * AI alat je koriscen za proveru funkcionalnosti pojedinih linija koda, zbog same Java sintakse.
 * Kod je napisan u skladu sa primerima sa vezbi i predavanja. :)
 -----------------------------------------------------------------------------------------------------------------------------------------------------
+7.7.2026.
+
+- Dodata je jos jedna **klasa NetworkConnection**.
+- Testiran serverski deo aplikacije sa Command prompt-om i emulatorom, radilo je ispravno.
+- U narednom koraku ce se realizovati klijentski deo mrezne aplikacije, kao i vizuelni prikaz sa dve aktivnosti (dva prozora).
+
+* AI alat je koriscen za proveru funkcionalnosti pojedinih linija koda, zbog same Java sintakse.
+* Kod je napisan u skladu sa primerima sa vezbi i predavanja. :)
+-----------------------------------------------------------------------------------------------------------------------------------------------------
