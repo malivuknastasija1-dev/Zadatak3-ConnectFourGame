@@ -87,11 +87,9 @@ public class ConnectedPlayerClient implements Runnable {
                         if (line.startsWith("INVITATION")) {
                             String[] tokeni = line.split(";");
                             String selectedPlayer = tokeni[1].trim().replace("\r", "");
-                            System.out.println("[SERVER] Telefon trazi igraca: '" + selectedPlayer + "'");
-                            
+                            System.out.println("[SERVER] " + this.userName + " šalje pozivnicu za: '" + selectedPlayer + "'");                            
                             ConnectedPlayerClient peerFound = null;
                             for(ConnectedPlayerClient cl : allClients) {
-                                System.out.println("[SERVER] Provera klijenta u listi: '" + cl.getUserName() + "' | Dostupan: " + cl.isAvailable());
                                 if(cl.getUserName().equalsIgnoreCase(selectedPlayer) && cl.isAvailable()) {
                                     peerFound = cl;
                                     break;
@@ -99,19 +97,50 @@ public class ConnectedPlayerClient implements Runnable {
                             }
                             
                             if(peerFound != null) {
-                                System.out.println("[SERVER] Igrac pronadjen! Spajam ih...");
-                                this.available = false;
-                                peerFound.setAvailable(false);
-                                
-                                this.rival = peerFound;
-                                peerFound.setRival(this);
-                                this.sendMessage("START_MESSAGE;PLAYER1;" + peerFound.getUserName());
-                                peerFound.sendMessage("START_MESSAGE;PLAYER2;" + this.userName);
-                                
-                                ConnectFourServer.sendListOfAvailablePlayers(allClients);
+                                peerFound.sendMessage("STIGAO_IZAZOV;" + this.userName);
+                                System.out.println("[SERVER] Pozivnica uspešno prosleđena igraču " + selectedPlayer);
                             } else {
                                 System.out.println("[SERVER] GRESKA: Igrac '" + selectedPlayer + "' nije pronadjen ili nije dostupan!");
                                 this.sendMessage("ERROR;Igrač je nedostupan.");
+                            }
+                        }
+                            else if (line.startsWith("RESPONSE")){
+                            String[] tokeni = line.split(";");
+                            String response = tokeni[1].trim().replace("\r", "");
+                            String rivalName = tokeni[2].trim().replace("\r", "");
+                            ConnectedPlayerClient rivalClient = null;
+                            for(ConnectedPlayerClient cl : allClients) {
+                                if(cl.getUserName().equalsIgnoreCase(rivalName)) {
+                                    rivalClient = cl;
+                                    break;
+                                }
+                            }
+                            if (rivalClient != null){
+                                if (response.equals("ACCEPT")){
+                                    boolean canPlay = (this.rival == rivalClient) || (rivalClient.isAvailable() && this.available);
+                                    
+                                    if (canPlay){
+                                        this.available = false;
+                                    rivalClient.setAvailable(false);
+                                    this.rival = rivalClient;
+                                    rivalClient.setRival(this);
+                                    rivalClient.sendMessage("START_MESSAGE;RED_PLAYER;" + this.userName);
+                                    this.sendMessage("START_MESSAGE;BLUE_PLAYER;" + rivalClient.getUserName());
+                                    ConnectFourServer.sendListOfAvailablePlayers(allClients);
+                                    System.out.println("[SERVER] Partija uspesno sklopljena izmedju " + rivalName + " i " + this.userName);
+                                    } else{
+                                        rivalClient.sendMessage("INVITATION_REJECTED;" + this.userName);
+                                        System.out.println("[SERVER] Igrač je nedostupan u lobiju za novu partiju.");
+                                    }
+                                } else{
+                                    this.available = true;
+                                    rivalClient.setAvailable(true);
+                                    this.rival = null;
+                                    rivalClient.setRival(null);
+                                    rivalClient.sendMessage("INVITATION_REJECTED;" + this.userName);
+                                    ConnectFourServer.sendListOfAvailablePlayers(allClients);
+                                    System.out.println("[SERVER] Igrac " + this.userName + " je odbio izazov.");
+                                }
                             }
                         }
                         else if (line.startsWith("TURN")) {
