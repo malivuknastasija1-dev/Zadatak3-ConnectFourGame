@@ -121,6 +121,18 @@ public class NetworkConnection {
             String[] players= listContent.split(",");
             callback.onPlayersListReceived(players);
         }
+        else if (message.startsWith("STIGAO_POZIV;")){
+            String[] tokeni = message.split(";");
+            if (tokeni.length >= 2){
+                callback.onChallengeReceived(tokeni[1]);
+            }
+        }
+        else if (message.startsWith("INVITATION_REJECTED;")){
+            String[] tokeni = message.split(";");
+            if (tokeni.length >= 2){
+                callback.onChallengeRejected(tokeni[1]);
+            }
+        }
         else if (message.startsWith("START_MESSAGE;")){
             String[] tokeni = message.split(";");
             if(tokeni.length >= 3){
